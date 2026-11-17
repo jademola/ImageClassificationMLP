@@ -1,0 +1,113 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{subcaption}
+\usepackage{microtype}
+\usepackage{cite} 
+\usepackage{url}
+
+
+
+\title{COMP 551 A3: Image Classification with MLPs and CNNs}
+\author{Christina Phensy \and Mo Wang \and Jimi Ademola}
+\date{\today}
+
+\begin{document}
+\maketitle
+\vspace{-1cm}
+
+\begin{abstract}
+Image classification is foundational to computer vision and applied machine learning.
+Using the FashionMNIST dataset, we compared a \textit{multilayer perceptron} (MLP) implemented from scratch, 
+a \textit{convolutional neural network} (CNN) built with PyTorch, and then a \textit{ResNet-50} model pre-trained on ImageNet.
+For the MLP, we examined depth, activation function, L1 and L2 regularization, input normalization, and data augmentation.
+Regularization had little effect, as the model did not suffer greatly from overfitting, and the choice of activation function
+made little difference.
+However, input normalization was essential.
+Results showed that with the same learning rate, training with normalization reached 88.1\% accuracy, unlike the 10.0\% without it.
+The CNN outperformed the best MLP on test accuracy (91.6\% vs.\ 88.1\%), demonstrating the advantage of CNNs' ability to retain the 
+spatial structure of 2D image inputs.
+In addition, data augmentation had a negligible effect on the MLP but raised the CNN test accuracy further to 92.6\%.
+The pre-trained ResNet-50 achieved 89.8\% test accuracy on FashionMNIST, outperforming the MLP but not the CNN, and 67.8\% on Food-101, 
+a more difficult dataset of food photographs with 101 classes.
+Overall, our results show the limitations of MLPs for image classification and that a small CNN trained directly on FashionMNIST 
+outperformed both the MLP and the much larger pre-trained ResNet-50.
+\end{abstract}
+
+\section{Introduction}
+Various models can be implemented for image classification.
+\textit{Multilayer perceptrons} (MLPs) treat each pixel as an independent input, whereas \textit{convolutional neural
+networks} (CNNs) learn local spatial patterns through convolution and pooling~\cite{Goodfellow-et-al-2016},
+and have been shown to outperform other methods on image recognition tasks such as handwritten digit
+classification~\cite{726791}.
+In addition, a CNN pre-trained on a large dataset such as \textit{ImageNet}~\cite{5206848} can be
+reused by training only a new classification head on its features~\cite{7301270}.
+We evaluated all three approaches on \textit{FashionMNIST}~\cite{fashionmnist}: an MLP built from scratch, a CNN
+built with PyTorch, and a pre-trained ResNet-50~\cite{Resnet50}, which we also trained with the
+Food-101~\cite{bossard14} dataset for comparison.
+FashionMNIST contains 70,000 grayscale $28\times28$ images of clothing in 10 classes, and
+Food-101 contains 101,000 colour photographs of 101 dishes with deliberately noisy training labels.
+For the MLP, input normalization was essential, raising test accuracy from 10.0\% to 88.1\% at the same
+learning rate, while the choice of activation function and data augmentation had little effect.
+Regularization also had little effect, as the model was not suffering greatly from overfitting.
+Furthermore, the CNN outperformed the best MLP (91.6\% vs.\ 88.1\%), and reached an even higher 92.6\%
+accuracy with dynamic augmentations of the dataset generated at each epoch.
+The pre-trained ResNet-50 reached 89.8\% on FashionMNIST, outperforming the MLP but not our CNN, and
+67.8\% on the more difficult Food-101 dataset.
+
+\section{Datasets}
+FashionMNIST provides 70,000 grayscale $28\times28$ clothing images of 10 different types, which we divided
+into 48,000 training, 12,000 validation, and 10,000 test images.
+Our exploratory analysis found that the data was not corrupted and had no NaN values, blank images,
+out-of-range pixels, labels outside 0--9, or train/validation overlap that could cause data leakage.
+We also found that the 10 classes are balanced, with about 4,800 training and exactly 1,000 test images per
+class, so accuracy is a fair evaluation metric.
+Pixel intensities range from 0 to 255 and are bimodal, with a large peak of background values near 0 and
+a second peak of clothing pixels between about 200 and 230 ($\mu = 72.9$, $\sigma = 90.0$).
+We normalized all subsets using these training set statistics to keep the input scale small for stable
+gradient-based training.
+Food-101 provides 750 training and 250 manually reviewed test images per class; we used 80\% of the
+training images for training (600 per class) and 20\% for validation.
+
+\section{Results}
+All models were selected by validation accuracy, and we report test accuracy at the epoch with the
+highest validation accuracy.
+Unless stated otherwise, each experiment used a fixed random seed (2026) for reproducibility.
+
+\subsection{Multilayer Perceptron}
+(Anny) 5 sentences 
+
+\subsection{Convolutional Neural Network}
+(Phensy) 5 sentences 
+
+\subsection{Pre-trained ResNet-50}
+(Jimi) 5 sentences 
+
+\section{Discussion and Conclusion}
+5 sentences 
+
+\section*{Statement of Contributions}
+\begin{itemize}
+  \item \textbf{Phensy:} Task 1 contributions, Tasks 3.5--3.7, LaTeX setup and main report writing.
+  \item \textbf{Anny:} Task 1 contributions, Task 1 exploratory data analysis, Task 2, Tasks 3.1--3.4.
+  \item \textbf{Jimi:} Tasks 3.8--3.10, report figures and appendix formatting, materials submission.
+\end{itemize} 
+
+\section*{LLM Statement}
+We used LLMs to explain course concepts, help debug our code, find reference syntax, 
+give editorial feedback on our writing, and suggest papers to cite, all of which we reviewed, 
+integrated, and verified ourselves. All individual interactions are documented and combined into one uploaded LLM log.
+
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\section*{Appendix}
+
+\end{document}
+
+
