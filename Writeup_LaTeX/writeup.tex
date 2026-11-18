@@ -82,7 +82,38 @@ Unless stated otherwise, each experiment used a fixed random seed (2026) for rep
 (Anny) 5 sentences 
 
 \subsection{Convolutional Neural Network}
-(Phensy) 5 sentences 
+Data augmentation can improve accuracy in machine learning predictions by increasing the size and 
+diversity of the training set, preferentially with CNN models used for image classification tasks~\cite{10932445}. 
+To evaluate this claim, we first applied geometric (random rotations up to $10^\circ$ and horizontal flips)
+and photometric (brightness and contrast changes up to 20\%) transformations to the FashionMNIST dataset. Transformations were chosen 
+to not alter the images in a way that could change the label, which is a potential harmful 
+result of this technique such as medical images being improperly classified and impacting 
+diagnosis accuracy. We then trained our best MLP on the modified data to compare with the 
+baseline MLP. The results showed a 0.0058 reduction in validation accuracy. We posit this is due to 
+two factors: the MLP was not overfitting substantially, as shown by the small effect of L1 and L2 
+regularization in the prior experiment, and MLPs do not preserve the spatial structure of images, unlike CNNs.
+The nominal difference can also be a result of noise.
+
+To further substantiate this claim, we used PyTorch to build a CNN with two convolutional layers,
+a fully connected hidden layer of 256 units with ReLU activations, and a fully connected output layer
+of 10 units, with the softmax applied through the cross-entropy loss. With an initial sweep of the learning 
+rate and momentum hyperparameters, we selected $\lambda = 0.01$ and $\beta = 0.9$, based on the highest validation accuracy. 
+Additional tuning of the number of filters and kernel size showed that the best configuration 
+(64/128 filters, $3\times3$ kernels) outperformed the second best configuration (32/64 filters,
+$5\times5$ kernels) by only 0.0033 in validation accuracy. We selected the smaller configuration, 
+as it performed comparably with half the parameters (824K vs.\ 1.68M) and about 1.1\,s less training time per epoch. 
+We also added batch normalization to our baseline CNN, which changed validation accuracy by only 0.16 percentage 
+points but nominally increased the training time by 0.2\,s per epoch. 
+
+When we compared our baseline CNN and MLP, the CNN achieved higher test accuracy (91.6\% vs.\ 88.1\%). 
+This is consistent with prior work showing that CNNs outperform fully connected networks on image
+classification, as their convolutional layers preserve the spatial structure of images through 
+local connections and shared filters~\cite[Ch.~9]{Goodfellow-et-al-2016}. We then tested whether 
+augmentation improves the CNN's generalization by training it on the clean and augmented images 
+combined, using the same transformations as for the MLP. To further explore whether more diversity
+in training data improves generalization, we also trained the CNN with new 
+random augmentations generated at every epoch. The results from these 3 model runs showed that these 
+changes do in fact improve validation accuracy as shown in Table[X] and Figure[X].
 
 \subsection{Pre-trained ResNet-50}
 (Jimi) 5 sentences 
