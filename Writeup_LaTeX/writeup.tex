@@ -29,10 +29,10 @@ Regularization had little effect, as the model did not suffer greatly from overf
 made little difference.
 However, input normalization was essential.
 Results showed that with the same learning rate, training with normalization reached 88.1\% accuracy, unlike the 10.0\% without it.
-The CNN outperformed the best MLP on test accuracy (91.6\% vs.\ 88.1\%), demonstrating the advantage of CNNs' ability to retain the 
+The CNN outperformed the best MLP on test accuracy (91.7\% vs.\ 88.1\%), demonstrating the advantage of CNNs' ability to retain the 
 spatial structure of 2D image inputs.
-In addition, data augmentation had a negligible effect on the MLP but raised the CNN test accuracy further to 92.6\%.
-The pre-trained ResNet-50 achieved 89.8\% test accuracy on FashionMNIST, outperforming the MLP but not the CNN, and 67.8\% on Food-101, 
+In addition, data augmentation had a negligible effect on the MLP but raised the CNN test accuracy from 91.7\% to 91.8\% then to 92\% with new transformations every epoch.
+The pre-trained ResNet-50 achieved 90.1\% test accuracy on FashionMNIST, outperforming the MLP but not the CNN, and 67.8\% on Food-101, 
 a more difficult dataset of food photographs with 101 classes.
 Overall, our results show the limitations of MLPs for image classification and that a small CNN trained directly on FashionMNIST 
 outperformed both the MLP and the much larger pre-trained ResNet-50.
@@ -54,9 +54,9 @@ Food-101 contains 101,000 colour photographs of 101 dishes with deliberately noi
 For the MLP, input normalization was essential, raising test accuracy from 10.0\% to 88.1\% at the same
 learning rate, while the choice of activation function and data augmentation had little effect.
 Regularization also had little effect, as the model was not suffering greatly from overfitting.
-Furthermore, the CNN outperformed the best MLP (91.6\% vs.\ 88.1\%), and reached an even higher 92.6\%
+Furthermore, the CNN outperformed the best MLP (91.7\% vs.\ 88.1\%), and reached an even higher 92\%
 accuracy with dynamic augmentations of the dataset generated at each epoch.
-The pre-trained ResNet-50 reached 89.8\% on FashionMNIST, outperforming the MLP but not our CNN, and
+The pre-trained ResNet-50 reached 90.1\% on FashionMNIST, outperforming the MLP but not our CNN, and
 67.8\% on the more difficult Food-101 dataset.
 
 \section{Datasets}
@@ -86,8 +86,8 @@ Data augmentation can improve accuracy in machine learning predictions by increa
 diversity of the training set, preferentially with CNN models used for image classification tasks~\cite{10932445}. 
 To evaluate this claim, we first applied geometric (random rotations up to $10^\circ$ and horizontal flips)
 and photometric (brightness and contrast changes up to 20\%) transformations to the FashionMNIST dataset. Transformations were chosen 
-to not alter the images in a way that could change the label, which is a potential harmful 
-result of this technique such as medical images being improperly classified and impacting 
+to not alter the images in a way that could change the label, which can harm the
+results, such as medical images being improperly classified and impacting 
 diagnosis accuracy. We then trained our best MLP on the modified data to compare with the 
 baseline MLP. The results showed a 0.0058 reduction in validation accuracy. We posit this is due to 
 two factors: the MLP was not overfitting substantially, as shown by the small effect of L1 and L2 
@@ -97,23 +97,24 @@ The nominal difference can also be a result of noise.
 To further substantiate this claim, we used PyTorch to build a CNN with two convolutional layers,
 a fully connected hidden layer of 256 units with ReLU activations, and a fully connected output layer
 of 10 units, with the softmax applied through the cross-entropy loss. With an initial sweep of the learning 
-rate and momentum hyperparameters, we selected $\lambda = 0.01$ and $\beta = 0.9$, based on the highest validation accuracy. 
-Additional tuning of the number of filters and kernel size showed that the best configuration 
-(64/128 filters, $3\times3$ kernels) outperformed the second best configuration (32/64 filters,
-$5\times5$ kernels) by only 0.0033 in validation accuracy. We selected the smaller configuration, 
-as it performed comparably with half the parameters (824K vs.\ 1.68M) and about 1.1\,s less training time per epoch. 
-We also added batch normalization to our baseline CNN, which changed validation accuracy by only 0.16 percentage 
-points but nominally increased the training time by 0.2\,s per epoch. 
+rate and momentum hyperparameters, we selected $\alpha = 0.01$ and $\beta = 0.9$, based on the highest validation accuracy. 
+Additional tuning of the number of filters and kernel size showed that the best configuration
+(64/128 filters, $3\times3$ kernels) outperformed our selected configuration (32/64 filters,
+$3\times3$ kernels) by only 0.0033 in validation accuracy.
+We selected the smaller configuration, as it performed comparably with half the parameters
+(824K vs.\ 1.68M) and about 1.7\,s less training time per epoch.
+We also evaluated the effect of batch normalization on validation accuracy. The results showed minimal
+benefit of +0.16\% at the cost of roughly 3x the runtime, so we omitted its use in the baseline CNN.
 
-When we compared our baseline CNN and MLP, the CNN achieved higher test accuracy (91.6\% vs.\ 88.1\%). 
+When we compared our baseline CNN and MLP, the CNN achieved higher test accuracy (91.7\% vs.\ 88.1\%). 
 This is consistent with prior work showing that CNNs outperform fully connected networks on image
 classification, as their convolutional layers preserve the spatial structure of images through 
 local connections and shared filters~\cite[Ch.~9]{Goodfellow-et-al-2016}. We then tested whether 
-augmentation improves the CNN's generalization by training it on the clean and augmented images 
-combined, using the same transformations as for the MLP. To further explore whether more diversity
-in training data improves generalization, we also trained the CNN with new 
-random augmentations generated at every epoch. The results from these 3 model runs showed that these 
-changes do in fact improve validation accuracy as shown in Table[X] and Figure[X].
+augmentation improves the CNN's baseline, training the CNN on the baseline set and then the static augmented set.
+ The results did show an improvment in test accuracy from 91.7\% to 91.8\%, which could be noise so is not a strong signal.
+ To further explore whether more diversity in training data improves generalization, we generated random
+ augmentations every epoch when training the CNN, resulting in a 92\% accuracy. The results from these 3 model runs showed that these 
+changes do in fact improve validation accuracy as shown in Table[X] and Figure[X], although nominally.
 
 \subsection{Pre-trained ResNet-50}
 (Jimi) 5 sentences 
