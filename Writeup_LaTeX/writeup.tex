@@ -9,6 +9,7 @@
 \usepackage{microtype}
 \usepackage{cite} 
 \usepackage{url}
+\usepackage{parskip}
 
 
 
@@ -18,7 +19,6 @@
 
 \begin{document}
 \maketitle
-\vspace{-1cm}
 
 \begin{abstract}
 Image classification is foundational to computer vision and applied machine learning.
@@ -29,10 +29,10 @@ Regularization had little effect, as the model did not suffer greatly from overf
 made little difference.
 However, input normalization was essential.
 Results showed that with the same learning rate, training with normalization reached 88.1\% accuracy, unlike the 10.0\% without it.
-The CNN outperformed the best MLP on test accuracy (91.7\% vs.\ 88.1\%), demonstrating the advantage of CNNs' ability to retain the 
+The CNN outperformed the best MLP on test accuracy (91.6\% vs.\ 88.1\%), demonstrating the advantage of CNNs' ability to retain the 
 spatial structure of 2D image inputs.
-In addition, data augmentation had a negligible effect on the MLP but raised the CNN test accuracy from 91.7\% to 91.8\% then to 92\% with new transformations every epoch.
-The pre-trained ResNet-50 achieved 90.1\% test accuracy on FashionMNIST, outperforming the MLP but not the CNN, and 67.8\% on Food-101, 
+In addition, data augmentation had a negligible effect on the MLP but raised the CNN test accuracy further to 92.6\%.
+The pre-trained ResNet-50 achieved 89.8\% test accuracy on FashionMNIST, outperforming the MLP but not the CNN, and 67.8\% on Food-101, 
 a more difficult dataset of food photographs with 101 classes.
 Overall, our results show the limitations of MLPs for image classification and that a small CNN trained directly on FashionMNIST 
 outperformed both the MLP and the much larger pre-trained ResNet-50.
@@ -54,9 +54,9 @@ Food-101 contains 101,000 colour photographs of 101 dishes with deliberately noi
 For the MLP, input normalization was essential, raising test accuracy from 10.0\% to 88.1\% at the same
 learning rate, while the choice of activation function and data augmentation had little effect.
 Regularization also had little effect, as the model was not suffering greatly from overfitting.
-Furthermore, the CNN outperformed the best MLP (91.7\% vs.\ 88.1\%), and reached an even higher 92\%
+Furthermore, the CNN outperformed the best MLP (91.6\% vs.\ 88.1\%), and reached an even higher 92.6\%
 accuracy with dynamic augmentations of the dataset generated at each epoch.
-The pre-trained ResNet-50 reached 90.1\% on FashionMNIST, outperforming the MLP but not our CNN, and
+The pre-trained ResNet-50 reached 89.8\% on FashionMNIST, outperforming the MLP but not our CNN, and
 67.8\% on the more difficult Food-101 dataset.
 
 \section{Datasets}
@@ -79,15 +79,82 @@ highest validation accuracy.
 Unless stated otherwise, each experiment used a fixed random seed (2026) for reproducibility.
 
 \subsection{Multilayer Perceptron}
-(Anny) 5 sentences 
+
+\paragraph{Setup.}
+All MLPs were trained with mini-batch gradient descent for 10 epochs. 
+We tuned the learning rate first and then the batch size on the 2-hidden-layer ReLU MLP, using validation accuracy (Appendix Tables~\ref{tab:mlp-lr} and~\ref{tab:mlp-bs}).
+Validation accuracy stayed at about 88.8\% for learning rates of 0.05 and above.
+Lower rates gave lower accuracy because they were still improving after 10 epochs.
+We therefore used 0.05, the lowest rate that reached this level.
+A batch size of 32 was 0.4\% better than 64, but it needs twice as many updates per epoch. A batch size of 256 was clearly worse (87.4\%), because it makes only 188 updates per epoch. We therefore used a batch size of 64 for all MLPs. 
+
+Table~\ref{tab:mlp-main} summarize the eight MLPs.
+With no hidden layer, the model is a linear softmax regression, and it reached only 83.6\% test accuracy. Its training accuracy of 86.2\% is about 7 points lower than the 93\% reached by the models with hidden layers, and its train-test gap of 2.6 points is the smallest of all models. This shows that the model is underfitting.
+
+Adding one ReLU hidden layer gave the largest gain, raising test accuracy by about 4.6 points to 88.2\%. This shows that the non-linearity is the main source of improvement, as we expected.
+A second hidden layer did not help. Its test accuracy fell slightly to 87.7\%, and the train--test gap grew from 4.7 to 5.3 points. Thus, extra depth brings no clear benefit with 10 epochs of training.
+Width mattered more than depth: going from 32 to 512 units per layer raised validation accuracy
+from 86.8\% to 89.2\%, but training time grew from 1.5\,s to 42\,s (Appendix Table~\ref{tab:mlp-width}).
+Over five seeds, the three activation functions gave almost the same mean test accuracy
+(87.89--87.93\%), and the differences were much smaller than the standard deviations
+(0.16--0.26 points; Appendix Table~\ref{tab:mlp-act}).
+Tanh had slightly lower training accuracy (92.8\% vs.\ 93.0\% for ReLU and 93.3\% for Leaky-ReLU),
+likely because it saturates for large inputs and gives smaller gradients.
+Leaky-ReLU gave no gain because no ReLU unit was dead on the validation set, so its small negative
+slope was never needed.
+We expected ReLU-type activations to be clearly better, but with normalized inputs, a suitable
+initialization and only two hidden layers, none of the activations suffered from vanishing gradients
+or dead units.
+L1 and L2 regularization, with the best values $\lambda_1 = \lambda_2 = 10^{-5}$ chosen on validation,
+raised validation accuracy by about 0.4 points but test accuracy by only 0.05--0.12 points,
+and the train--test gap stayed at 5.3 points (Appendix Table~\ref{tab:mlp-reg}).
+Since the model was only mildly overfitting after 10 epochs, regularization had little to fix.
+Strong L1 ($\lambda_1 = 10^{-3}$) even caused underfitting (84.0\%), because it pushes many weights
+towards zero, while L2 stayed stable at the same value (87.9\%).
+% TODO: after making the weight histogram, add one sentence with the real numbers, e.g.
+% "With L1, X\% of first-layer weights were below 0.001, compared with Y\% without regularization."
+Finally, training on raw pixel values (0--255) with the same learning rate failed completely:
+all accuracies were 10.0\%, which equals random guessing over 10 classes.
+The raw inputs are about 90 times larger than the normalized ones, so the gradients and update steps
+are far too large. The weights exploded (largest $|W_1| \approx 10^{14}$), and more than 98\% of the
+hidden units became dead.
+A 100 times smaller learning rate ($5\times10^{-4}$) made training work again, but validation accuracy
+reached only 81.9\%, about 7 points below the normalized model (Appendix Table~\ref{tab:mlp-raw}).
+Normalization therefore does more than fix the step size: it makes the model much easier to optimize
+with gradient descent.
+
+% ---------- main table ----------
+\begin{table}[t]
+  \centering
+  \caption{Train and test accuracy of the eight MLPs after 10 epochs
+           (lr $=0.05$, batch size 64). All hidden layers have 256 units.}
+  \label{tab:mlp-main}
+  \begin{tabular}{llccc}
+    \toprule
+    Experiment & Model & Train accuracy & Test accuracy & Train $-$ test \\
+    \midrule
+    Depth          & No hidden layer          & 0.8620 & 0.8364 & 0.0256 \\
+                   & 1 hidden layer           & 0.9290 & 0.8823 & 0.0467 \\
+                   & 2 hidden layers (ReLU)   & 0.9296 & 0.8771 & 0.0525 \\
+    \midrule
+    Activation     & Tanh                     & 0.9278 & 0.8793 & 0.0485 \\
+                   & Leaky-ReLU               & 0.9332 & 0.8794 & 0.0538 \\
+    \midrule
+    Regularization & L1 ($\lambda_1=10^{-5}$) & 0.9312 & 0.8783 & 0.0530 \\
+                   & L2 ($\lambda_2=10^{-5}$) & 0.9309 & 0.8776 & 0.0533 \\
+    \midrule
+    Normalization  & Unnormalized             & 0.1001 & 0.1000 & 0.0001 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Convolutional Neural Network}
 Data augmentation can improve accuracy in machine learning predictions by increasing the size and 
 diversity of the training set, preferentially with CNN models used for image classification tasks~\cite{10932445}. 
 To evaluate this claim, we first applied geometric (random rotations up to $10^\circ$ and horizontal flips)
 and photometric (brightness and contrast changes up to 20\%) transformations to the FashionMNIST dataset. Transformations were chosen 
-to not alter the images in a way that could change the label, which can harm the
-results, such as medical images being improperly classified and impacting 
+to not alter the images in a way that could change the label, which is a potential harmful 
+result of this technique such as medical images being improperly classified and impacting 
 diagnosis accuracy. We then trained our best MLP on the modified data to compare with the 
 baseline MLP. The results showed a 0.0058 reduction in validation accuracy. We posit this is due to 
 two factors: the MLP was not overfitting substantially, as shown by the small effect of L1 and L2 
@@ -97,30 +164,43 @@ The nominal difference can also be a result of noise.
 To further substantiate this claim, we used PyTorch to build a CNN with two convolutional layers,
 a fully connected hidden layer of 256 units with ReLU activations, and a fully connected output layer
 of 10 units, with the softmax applied through the cross-entropy loss. With an initial sweep of the learning 
-rate and momentum hyperparameters, we selected $\alpha = 0.01$ and $\beta = 0.9$, based on the highest validation accuracy. 
-Additional tuning of the number of filters and kernel size showed that the best configuration
-(64/128 filters, $3\times3$ kernels) outperformed our selected configuration (32/64 filters,
-$3\times3$ kernels) by only 0.0033 in validation accuracy.
-We selected the smaller configuration, as it performed comparably with half the parameters
-(824K vs.\ 1.68M) and about 1.7\,s less training time per epoch.
-We also evaluated the effect of batch normalization on validation accuracy. The results showed minimal
-benefit of +0.16\% at the cost of roughly 3x the runtime, so we omitted its use in the baseline CNN.
+rate and momentum hyperparameters, we selected $\lambda = 0.01$ and $\beta = 0.9$, based on the highest validation accuracy. 
+Additional tuning of the number of filters and kernel size showed that the best configuration 
+(64/128 filters, $3\times3$ kernels) outperformed the second best configuration (32/64 filters,
+$5\times5$ kernels) by only 0.0033 in validation accuracy. We selected the smaller configuration, 
+as it performed comparably with half the parameters (824K vs.\ 1.68M) and about 1.1\,s less training time per epoch. 
+We also added batch normalization to our baseline CNN, which changed validation accuracy by only 0.16 percentage 
+points but nominally increased the training time by 0.2\,s per epoch. 
 
-When we compared our baseline CNN and MLP, the CNN achieved higher test accuracy (91.7\% vs.\ 88.1\%). 
+When we compared our baseline CNN and MLP, the CNN achieved higher test accuracy (91.6\% vs.\ 88.1\%). 
 This is consistent with prior work showing that CNNs outperform fully connected networks on image
 classification, as their convolutional layers preserve the spatial structure of images through 
 local connections and shared filters~\cite[Ch.~9]{Goodfellow-et-al-2016}. We then tested whether 
-augmentation improves the CNN's baseline, training the CNN on the baseline set and then the static augmented set.
- The results did show an improvment in test accuracy from 91.7\% to 91.8\%, which could be noise so is not a strong signal.
- To further explore whether more diversity in training data improves generalization, we generated random
- augmentations every epoch when training the CNN, resulting in a 92\% accuracy. The results from these 3 model runs showed that these 
-changes do in fact improve validation accuracy as shown in Table[X] and Figure[X], although nominally.
+augmentation improves the CNN's generalization by training it on the clean and augmented images 
+combined, using the same transformations as for the MLP. To further explore whether more diversity
+in training data improves generalization, we also trained the CNN with new 
+random augmentations generated at every epoch. The results from these 3 model runs showed that these 
+changes do in fact improve validation accuracy as shown in Table[X] and Figure[X].
 
 \subsection{Pre-trained ResNet-50}
-(Jimi) 5 sentences 
+We implemented the popular ResNet-50 image-classification model to see how training time and accuracy would differ compared to our previously implemented models. In order to select the number of fully-connected layers we tested from 0-3 hidden layers, with zero acting as a baseline for comparison in terms of accuracy and training time (\ref{tab:model_performance_1}). The results showed that the model with two hidden layers performed with the highest validation accuracy at 89.8\%. This model also boasted an average per-epoch training time of 2.00s, which was highly comparable to the various models tested through this assignment. In addition, it was slighty faster than the implemented CNN model, although falling behind it in accuracy by three points. This accuracy is substantially explained by prior work, as although ResNet is a CNN of its own, the tuned hyperparameters contribute to a model more suited for the given dataset.
+
+Lastly, when the pre-trained model was tested against the difficult Food101 dataset, it showed a 20 point drop in accuracy. The dataset was already in RGB format so no grayscale conversion was needed. In addition, the output layer of the model had to be modified to 101 logits compared to the 10 classes of FashionMSINT This is most likely attributable to a major increase in the number of classes present in the dataset as with 101 classes, there is greater convergence between classes (\ref{tab:model_performance_2}). Another point of note was the model having an inverse correlation between the number of hidden layers and testing / validation accuracy, an indication of poor generalization as the hidden layers grew.
 
 \section{Discussion and Conclusion}
-5 sentences 
+Overall, our implementation aligned with the prior academic work showing that Convolutional Neural Networks allow for better classification than MLPs. The difference between the test accuracy of our baseline MLPs and CNN of about 3 points, is attributable to the lost information from the flattened one-dimensional input into the MLP. 
+
+Our experimentation displayed the diminishing returns both the depth and the width of hidden layers. This is most clearly evident in the change in width from 128 to 512, where the validation accuracy increase by only 1 point, but the training time is seven times as long. As for an increase in depth, when training the MLP, experiments showed us that the highest testing accuracy was at 1 hidden layer, indicating better generalization. In addition, changing the activation function displayed a non-significant difference in terms of testing accuracy. 
+
+% SPEAK TO THE DIFFERENT TECHNIQUES OF DATA AUGMENTATION USED
+
+As for the CNN, we completed similar hyperparameter tuning as seen prior with simpler regression models to initially select a learning rate and momentum of 0.01 and 0.9, respectively. In addition, we selected the smaller configuration of filters due to a comparable result with half the parameters and a full second drop in training time per epoch. Despite attempts to utilize batch normalization, results showed a non-significant difference in accuracy despite a noticeable increase in training time. As such, our chosen model disregards batch normalization due to its negligble impact on our results. In addition, we can note that the chosen augmentation technique had a substantial impact on the resulting validation accuracy, for which the same cannot be said about the MLP.
+
+As an extension of CNNs, the usage of the pre-trained ResNet-50, showed how the tuning of a model can be utilized to significantly improve classification accuracy. Our own tuned model performed that much better on the same dataset, given the same data, constraints and augmentation.
+
+% Creativity
+
+
 
 \section*{Statement of Contributions}
 \begin{itemize}
@@ -140,6 +220,96 @@ integrated, and verified ourselves. All individual interactions are documented a
 
 \section*{Appendix}
 
+% ---------- MLP (Tasks 3.1--3.4) ----------
+
+% 1. learning rate
+\begin{table}[htbp]
+  \centering
+  \caption{Effect of learning rate}
+  \label{tab:mlp-lr}
+  \begin{tabular}{ccc}
+    \toprule
+    Learning rate & Train accuracy & Val accuracy \\
+    \midrule
+    0.005 & 0.886 & 0.873 \\
+    0.010 & 0.901 & 0.879 \\
+    0.050 & 0.930 & 0.888 \\
+    0.100 & 0.932 & 0.887 \\
+    0.200 & 0.932 & 0.888 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% 2. batch size
+\begin{table}[htbp]
+  \centering
+  \caption{Effect of batch size}
+  \label{tab:mlp-bs}
+  \begin{tabular}{cccc}
+    \toprule
+    Batch size & Epoch & Train accuracy & Val accuracy \\
+    \midrule
+    32  & 1500 & 0.9406 & 0.8920 \\
+    64  & 750  & 0.9296 & 0.8877 \\
+    128 & 375  & 0.9195 & 0.8880 \\
+    256 & 188  & 0.8958 & 0.8742 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Effect of hidden-layer width (2 hidden layers, ReLU)}
+  \label{tab:mlp-width}
+  \begin{tabular}{cccc}
+    \toprule
+    Width & Train accuracy & Val accuracy & Time (s) \\
+    \midrule
+    32  & 0.8899 & 0.8677 & 1.5 \\
+    64  & 0.9141 & 0.8787 & 2.6 \\
+    128 & 0.9248 & 0.8882 & 6.6 \\
+    256 & 0.9296 & 0.8877 & 15.2 \\
+    512 & 0.9490 & 0.8921 & 42.0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+% --------------------
+
+
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{l c c c c c}
+\hline
+\textbf{Model} & \textbf{Best Epoch} & \textbf{Train Acc} & \textbf{Val Acc*} & \textbf{Test Acc} & \textbf{Mean Epoch Time (s)} \\
+\hline
+2 hidden layers & 7 & 0.9502 & 0.9027 & 0.8981 & 2.0029 \\
+1 hidden layer  & 10 & 0.9654 & 0.9014 & 0.8954 & 1.6374 \\
+3 hidden layers & 9 & 0.9566 & 0.8998 & 0.8972 & 2.1741 \\
+0 hidden layers & 9 & 0.9224 & 0.8962 & 0.8938 & 1.4335 \\
+\hline
+\end{tabular}
+\caption{Performance metrics across different hidden layer configurations.}
+\label{tab:model_performance_1}
+\footnotesize{\textit{Note:} All metrics are reported for the best epoch.}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{l c c c c c}
+\hline
+\textbf{Model} & \textbf{Best Epoch} & \textbf{Train Acc} & \textbf{Val Acc*} & \textbf{Test Acc} & \textbf{Mean Epoch Time (s)} \\
+\hline
+0 hidden layers & 7 & 0.7770 & 0.6349 & 0.6775 & 2.0996 \\
+1 hidden layer  & 7 & 0.8038 & 0.6218 & 0.6685 & 2.2828 \\
+2 hidden layers & 6 & 0.7894 & 0.6143 & 0.6555 & 2.7475 \\
+3 hidden layers & 10 & 0.8136 & 0.5930 & 0.6410 & 2.9098 \\
+\hline
+\end{tabular}
+\caption{Performance metrics across different hidden layer configurations.}
+\label{tab:model_performance_2}
+\footnotesize{\textit{Note:} All metrics are reported for the best epoch.}
+\end{table}
 \end{document}
 
 
